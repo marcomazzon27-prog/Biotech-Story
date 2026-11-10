@@ -1,87 +1,87 @@
 {
   "version": "2.0.0",
   "tasks": [
-    {
-      "label": "Mnemosine: init",
-      "type": "shell",
-      "command": "python",
-      "args": [
-        "run.py",
-        "init"
-      ],
-      "options": {
-        "cwd": "${workspaceFolder}"
-      },
-      "problemMatcher": []
+  {
+    "label": "Mnemosine: init",
+    "type": "shell",
+    "command": "${workspaceFolder}\\.venv\\Scripts\\python.exe",
+    "args": [
+      "run.py",
+      "init"
+    ],
+    "options": {
+      "cwd": "${workspaceFolder}"
     },
-    {
-      "label": "Mnemosine: state",
-      "type": "shell",
-      "command": "python",
-      "args": [
-        "run.py",
-        "state"
-      ],
-      "options": {
-        "cwd": "${workspaceFolder}"
-      },
-      "problemMatcher": []
+    "problemMatcher": []
+  },
+  {
+    "label": "Mnemosine: state",
+    "type": "shell",
+    "command": "${workspaceFolder}\\.venv\\Scripts\\python.exe",
+    "args": [
+      "run.py",
+      "state"
+    ],
+    "options": {
+      "cwd": "${workspaceFolder}"
     },
-    {
-      "label": "Mnemosine: propose",
-      "type": "shell",
-      "command": "python",
-      "args": [
-        "run.py",
-        "propose"
-      ],
-      "options": {
-        "cwd": "${workspaceFolder}"
-      },
-      "problemMatcher": []
+    "problemMatcher": []
+  },
+  {
+    "label": "Mnemosine: propose",
+    "type": "shell",
+    "command": "${workspaceFolder}\\.venv\\Scripts\\python.exe",
+    "args": [
+      "run.py",
+      "propose"
+    ],
+    "options": {
+      "cwd": "${workspaceFolder}"
     },
-    {
-      "label": "Mnemosine: commit",
-      "type": "shell",
-      "command": "python",
-      "args": [
-        "run.py",
-        "commit"
-      ],
-      "options": {
-        "cwd": "${workspaceFolder}"
-      },
-      "problemMatcher": []
+    "problemMatcher": []
+  },
+  {
+    "label": "Mnemosine: commit",
+    "type": "shell",
+    "command": "${workspaceFolder}\\.venv\\Scripts\\python.exe",
+    "args": [
+      "run.py",
+      "commit"
+    ],
+    "options": {
+      "cwd": "${workspaceFolder}"
     },
-    {
-      "label": "Mnemosine: serve",
-      "type": "shell",
-      "command": "python",
-      "args": [
-        "run.py",
-        "serve"
-      ],
-      "options": {
-        "cwd": "${workspaceFolder}"
-      },
-      "problemMatcher": []
+    "problemMatcher": []
+  },
+  {
+    "label": "Mnemosine: serve",
+    "type": "shell",
+    "command": "${workspaceFolder}\\.venv\\Scripts\\python.exe",
+    "args": [
+      "run.py",
+      "serve"
+    ],
+    "options": {
+      "cwd": "${workspaceFolder}"
     },
-    {
-      "label": "Mnemosine: tests",
-      "type": "shell",
-      "command": "python",
-      "args": [
-        "-m",
-        "unittest",
-        "discover",
-        "-s",
-        "tests",
-        "-v"
-      ],
-      "options": {
-        "cwd": "${workspaceFolder}"
-      },
-      "problemMatcher": []
-    }
-  ]
+    "problemMatcher": []
+  },
+  {
+    "label": "Mnemosine: tests",
+    "type": "shell",
+    "command": "${workspaceFolder}\\.venv\\Scripts\\python.exe",
+    "args": [
+      "-m",
+      "unittest",
+      "discover",
+      "-s",
+      "tests",
+      "-v"
+    ],
+    "options": {
+      "cwd": "${workspaceFolder}"
+    },
+    "problemMatcher": []
+  }
+]
 }

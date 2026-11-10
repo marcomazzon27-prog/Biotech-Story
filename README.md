@@ -3,14 +3,15 @@
 Contiene: schema SQLite del canone, import storico dei Cicli 1-5, motore con seed, validatore, test.
 
 ## Avvio
-    python -m pip install -e .
-    python run.py init        # crea mnemosine.db con i Cicli 1-5
-    python run.py propose     # anteprima del Ciclo 6 (non scrive)
-    python run.py commit      # scrive il Ciclo 6 nel canone
-    python run.py state       # stat, morti, promesse aperte
-    python -m unittest discover -s tests -v
+    python -m venv .venv
+    .\.venv\Scripts\python.exe -m pip install -e .
+    .\.venv\Scripts\python.exe run.py init        # crea mnemosine.db con i Cicli 1-5
+    .\.venv\Scripts\python.exe run.py propose     # anteprima del Ciclo 6 (non scrive)
+    .\.venv\Scripts\python.exe run.py commit      # scrive il Ciclo 6 nel canone
+    .\.venv\Scripts\python.exe run.py state       # stat, morti, promesse aperte
+    .\.venv\Scripts\python.exe -m unittest discover -s tests -v
 
-Il progetto è collegato come package locale editable, così i moduli `canon`, `engine`, `orchestrator`, `server` possono essere importati in modo coerente anche da VS Code, terminali e test.
+Il progetto è collegato come package locale editable, così i moduli `canon`, `engine`, `orchestrator`, `server` possono essere importati in modo coerente anche da VS Code, terminali e test. L'interprete di default del workspace punta a `.venv`.
 
 ## Principi
 - Il motore PROPONE, il validatore CONTROLLA, commit() SCRIVE. Gli agenti LLM (Fase 2) useranno solo propose/validate/commit.
