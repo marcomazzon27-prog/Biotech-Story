@@ -1,0 +1,10 @@
+# Nomi reali da non usare nel testo (uno per riga, case-insensitive)
+Royalty Pharma
+Healthcare Royalty
+23andMe
+Zymeworks
+Pfizer
+Enrico Melozzi
+Corriere della Sera
+Il Corriere
+Hotel Baur au Lac

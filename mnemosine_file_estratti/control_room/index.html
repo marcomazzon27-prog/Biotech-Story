@@ -1,0 +1,202 @@
+<!DOCTYPE html>
+<html lang="it">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Mnemosine — Sala di regia</title>
+<style>
+:root{
+  --bg:#E8ECEF; --panel:#F7F9FA; --ink:#15233D; --muted:#5A6A82; --line:#C6D0DA;
+  --amy:#5B3FD1; --amy-soft:#E7E2FA; --ok:#1F7A5A; --warn:#A8650B; --bad:#B3261E;
+  --ui:"Segoe UI",system-ui,-apple-system,"Helvetica Neue",Arial,sans-serif;
+  --read:Charter,"Iowan Old Style","Palatino Linotype",Georgia,serif;
+}
+*{box-sizing:border-box}
+body{margin:0;background:var(--bg);color:var(--ink);font:15px/1.5 var(--ui)}
+button,input{font:inherit;color:inherit}
+:focus-visible{outline:3px solid var(--amy);outline-offset:2px}
+header{padding:22px 32px 0;display:flex;align-items:baseline;gap:28px;flex-wrap:wrap}
+header h1{font:600 30px/1 var(--read);margin:0;letter-spacing:.2px}
+header .stato{color:var(--muted);display:flex;gap:18px;flex-wrap:wrap}
+nav{display:flex;gap:4px;padding:14px 32px 0;border-bottom:1px solid var(--line);overflow-x:auto}
+nav button{background:none;border:0;padding:10px 14px;color:var(--muted);cursor:pointer;border-bottom:3px solid transparent;white-space:nowrap}
+nav button[aria-selected=true]{color:var(--ink);border-bottom-color:var(--amy);font-weight:600}
+.bozza{margin:18px 32px 0;padding:12px 16px;background:var(--amy-soft);border-left:4px solid var(--amy);display:flex;gap:16px;align-items:center;flex-wrap:wrap}
+.bozza button{margin-left:auto}
+main{padding:22px 32px 60px}
+.btn{background:var(--ink);color:#fff;border:0;padding:9px 16px;border-radius:4px;cursor:pointer}
+.btn.sec{background:transparent;color:var(--ink);border:1px solid var(--ink)}
+.btn.bad{background:var(--bad)}
+.btn:disabled{opacity:.45;cursor:not-allowed}
+.split{display:grid;grid-template-columns:minmax(0,1fr) 340px;gap:22px;align-items:start}
+@media(max-width:980px){.split{grid-template-columns:1fr}}
+.panel{background:var(--panel);border:1px solid var(--line);padding:18px 20px}
+.panel h2{font:600 19px/1.2 var(--read);margin:0 0 6px}
+.muted{color:var(--muted)}
+.scroll-x{overflow-x:auto;background:var(--panel);border:1px solid var(--line)}
+svg text{font-family:var(--ui)}
+.dim{opacity:.16;transition:opacity .15s}
+.row{display:flex;gap:10px;align-items:center;flex-wrap:wrap}
+.list button{display:block;width:100%;text-align:left;background:none;border:0;border-bottom:1px solid var(--line);padding:9px 6px;cursor:pointer}
+.list button[aria-current=true]{background:var(--amy-soft);font-weight:600}
+.bar{height:7px;background:var(--line);margin:3px 0 9px}
+.bar i{display:block;height:100%;background:var(--ink)}
+.bar.risk i,.bar.guilt i{background:var(--bad)}
+.tag{display:inline-block;padding:1px 8px;border:1px solid var(--line);border-radius:10px;font-size:13px;color:var(--muted);margin:2px 4px 2px 0}
+.tag.bad{border-color:var(--bad);color:var(--bad)} .tag.ok{border-color:var(--ok);color:var(--ok)} .tag.warn{border-color:var(--warn);color:var(--warn)}
+table{border-collapse:collapse;width:100%}
+td,th{text-align:left;padding:9px 10px;border-bottom:1px solid var(--line);vertical-align:top}
+th{font-weight:600;color:var(--muted)}
+.chapter{font:17px/1.75 var(--read);max-width:68ch}
+.chapter h2{font-size:24px;margin:0 0 18px}
+.chapter mark{background:var(--amy-soft);color:var(--amy);padding:0 3px;cursor:help;border-radius:2px}
+.review{background:#FFF4E0;border-left:4px solid var(--warn);padding:10px 14px;margin-bottom:18px;font:14px/1.5 var(--ui)}
+input[type=url]{padding:7px 9px;border:1px solid var(--line);background:#fff;min-width:240px;border-radius:3px}
+#toast{position:fixed;bottom:20px;left:50%;transform:translateX(-50%);background:var(--ink);color:#fff;padding:10px 18px;display:none;border-radius:4px}
+details summary{cursor:pointer;color:var(--muted);margin:14px 0 6px}
+</style>
+</head>
+<body>
+<header>
+  <h1>Mnemosine</h1>
+  <div class="stato" id="stato"></div>
+</header>
+<nav role="tablist" id="nav"></nav>
+<div id="bozza"></div>
+<main id="main"><p class="muted">Caricamento del canone…</p></main>
+<div id="toast" role="status"></div>
+
+<script>
+const TABS=[["mappa","Mappa causale"],["personaggi","Personaggi"],["relazioni","Relazioni"],["debiti","Debiti narrativi"],["verifiche","Verifiche tecniche"],["capitoli","Capitoli"]];
+const STAT_IT={power:"Potere",money:"Soldi",rep:"Reputazione",guilt:"Colpa",bonds:"Legami",risk:"Rischio",health:"Salute"};
+const REL_IT={family:"famiglia",business:"affari",conflict:"conflitto",romance:"sentimentale",secret:"segreto",knowledge:"conoscenza"};
+const REL_COL={family:"#5B3FD1",business:"#1F7A5A",conflict:"#B3261E",romance:"#B0447E",secret:"#A8650B",knowledge:"#5A6A82"};
+let S=null, tab="mappa", selChar=null, selEvent=null;
+
+const esc=s=>String(s??"").replace(/[&<>"']/g,c=>({"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;","'":"&#39;"}[c]));
+const $=id=>document.getElementById(id);
+const ent=id=>S.entities.find(e=>e.id===id)||{name:id,id};
+function toast(m){const t=$("toast");t.textContent=m;t.style.display="block";clearTimeout(toast.h);toast.h=setTimeout(()=>t.style.display="none",3800)}
+async function api(path,body){
+  const r=await fetch(path,{method:"POST",headers:{"Content-Type":"application/json","X-Mnemosine":"1"},body:JSON.stringify(body||{})});
+  const j=await r.json(); if(!r.ok) throw new Error(j.errore||"Errore"); return j;
+}
+async function load(){
+  try{S=await (await fetch("/api/state")).json()}catch(e){$("main").innerHTML="<p>Server non raggiungibile. Avvia <code>python run.py serve</code>.</p>";return}
+  const vivi=S.entities.filter(e=>e.tier==="main"&&e.status==="vivo").length, morti=S.entities.filter(e=>e.status==="morto").length;
+  $("stato").innerHTML=`<span>Ciclo ${S.cycle}</span><span>${vivi} protagonisti in scena</span><span>${morti} morti</span>`;
+  $("nav").innerHTML=TABS.map(([k,l])=>`<button role="tab" aria-selected="${k===tab}" data-t="${k}">${l}</button>`).join("");
+  $("nav").querySelectorAll("button").forEach(b=>b.onclick=()=>{tab=b.dataset.t;draw()});
+  $("bozza").innerHTML=S.draft?`<div class="bozza"><span>C'è una bozza del ciclo ${S.draft.cycle} da rivedere.</span><button class="btn" id="vaiBozza">Leggi la bozza</button></div>`:"";
+  if(S.draft)$("vaiBozza").onclick=()=>{tab="capitoli";draw()};
+  draw();
+}
+function draw(){
+  $("nav").querySelectorAll("button").forEach(b=>b.setAttribute("aria-selected",b.dataset.t===tab));
+  ({mappa:vMappa,personaggi:vPersonaggi,relazioni:vRelazioni,debiti:vDebiti,verifiche:vVerifiche,capitoli:vCapitoli})[tab]();
+}
+
+/* ---------- Mappa causale ---------- */
+function vMappa(){
+  const evs=S.events.concat(S.draft?S.draft.events.map(e=>({...e,draft:true})):[]);
+  if(!evs.length){$("main").innerHTML="<p>Nessun evento nel canone.</p>";return}
+  const lanes=[...new Set(evs.map(e=>e.actor))], cycles=[...new Set(evs.map(e=>e.cycle))].sort((a,b)=>a-b);
+  const L=120,T=56,CW=170,LH=190,slot={},pos={};
+  evs.forEach(e=>{const k=e.cycle+"|"+e.actor;slot[k]=(slot[k]||0);pos[e.id]={x:L+cycles.indexOf(e.cycle)*CW,y:T+lanes.indexOf(e.actor)*LH+30+slot[k]*38};slot[k]++});
+  const kids={},byId=Object.fromEntries(evs.map(e=>[e.id,e]));
+  evs.forEach(e=>{if(e.cause&&byId[e.cause])(kids[e.cause]=kids[e.cause]||[]).push(e.id)});
+  const W=L+cycles.length*CW+40,H=T+lanes.length*LH+10;
+  let g=`<svg id="mapsvg" width="${W}" height="${H}" role="img" aria-label="Mappa delle cause tra gli eventi">`;
+  lanes.forEach((a,i)=>{g+=`<rect x="0" y="${T+i*LH}" width="${W}" height="${LH}" fill="${i%2?'#EEF2F5':'#F7F9FA'}"/><text x="14" y="${T+i*LH+34}" font-size="15" font-weight="600" fill="#15233D">${esc(ent(a).name)}</text>`});
+  cycles.forEach((c,i)=>g+=`<text x="${L+i*CW}" y="30" font-size="13" text-anchor="middle" fill="#5A6A82">Ciclo ${c}</text>`);
+  evs.forEach(e=>{if(!e.cause||!pos[e.cause])return;const a=pos[e.cause],b=pos[e.id],same=a.x===b.x,dx=same?34:(b.x-a.x)/2;
+    g+=`<path data-e="${e.id}" data-c="${e.cause}" class="edge" d="M${a.x} ${a.y} C${a.x+dx} ${a.y+(same?10:0)},${b.x-(same?-34:dx)} ${b.y-(same?10:0)},${b.x} ${b.y}" fill="none" stroke="#5B3FD1" stroke-width="1.6" opacity=".55"/>`});
+  evs.forEach(e=>{const p=pos[e.id],dead=e.kind==="morte",chain=e.kind==="catena",
+    shape=dead?`<rect x="${p.x-7}" y="${p.y-7}" width="14" height="14" transform="rotate(45 ${p.x} ${p.y})" fill="#B3261E"/>`:
+      `<circle cx="${p.x}" cy="${p.y}" r="${chain?5:8}" fill="${chain?'#F7F9FA':'#15233D'}" stroke="#15233D" stroke-width="2" ${e.draft?'stroke-dasharray="3 2"':''}/>`;
+    g+=`<g class="node" data-id="${e.id}" tabindex="0" style="cursor:pointer">${shape}<text x="${p.x}" y="${p.y+22}" font-size="11" text-anchor="middle" fill="#15233D">${esc(e.name.length>24?e.name.slice(0,23)+"…":e.name)}</text><title>${esc(e.name)}</title></g>`});
+  g+="</svg>";
+  $("main").innerHTML=`<div class="split"><div><div class="scroll-x">${g}</div><p class="muted">Ogni freccia va da una causa al suo effetto. Passa sopra un evento per vedere tutta la sua catena; losanga rossa: morte; tratteggiato: evento della bozza.</p></div><aside class="panel" id="det"><h2>Seleziona un evento</h2><p class="muted">Qui compaiono descrizione, luogo e catena delle cause.</p></aside></div>`;
+  const chain=id=>{const s=new Set([id]);let q=[id];while(q.length){const x=q.pop(),c=byId[x]&&byId[x].cause;if(c&&!s.has(c)){s.add(c);q.push(c)}}q=[id];while(q.length){const x=q.pop();(kids[x]||[]).forEach(k=>{if(!s.has(k)){s.add(k);q.push(k)}})}return s};
+  const hi=id=>{const s=chain(id);document.querySelectorAll(".node").forEach(n=>n.classList.toggle("dim",!s.has(n.dataset.id)));document.querySelectorAll(".edge").forEach(p=>p.classList.toggle("dim",!(s.has(p.dataset.e)&&s.has(p.dataset.c))))};
+  const clr=()=>document.querySelectorAll(".dim").forEach(n=>n.classList.remove("dim"));
+  const show=id=>{const e=byId[id],up=[];let c=e.cause;while(c&&byId[c]){up.unshift(byId[c]);c=byId[c].cause}
+    $("det").innerHTML=`<h2>${esc(e.name)}</h2><p class="muted">Ciclo ${e.cycle}${e.location?", "+esc(e.location):""}. Protagonista: ${esc(ent(e.actor).name)}${e.draft?". Evento della bozza.":""}</p><p>${esc(e.description||"")}</p>`+
+      (up.length?`<p><b>Catena delle cause</b></p><ol>${up.map(u=>`<li>${esc(u.name)} <span class="muted">(ciclo ${u.cycle})</span></li>`).join("")}<li><b>${esc(e.name)}</b></li></ol>`:`<p class="muted">Evento senza causa registrata: è un punto di partenza.</p>`)+
+      ((kids[id]||[]).length?`<p><b>Conseguenze dirette</b></p><ul>${kids[id].map(k=>`<li>${esc(byId[k].name)}</li>`).join("")}</ul>`:"")};
+  document.querySelectorAll(".node").forEach(n=>{n.onmouseenter=()=>hi(n.dataset.id);n.onmouseleave=clr;n.onfocus=()=>hi(n.dataset.id);n.onblur=clr;n.onclick=()=>show(n.dataset.id);n.onkeydown=ev=>{if(ev.key==="Enter")show(n.dataset.id)}});
+}
+
+/* ---------- Personaggi ---------- */
+function vPersonaggi(){
+  const people=S.entities.filter(e=>e.kind==="persona");
+  if(!selChar)selChar=people[0].id;
+  const c=ent(selChar), rels=S.relations.filter(r=>r.a===c.id||r.b===c.id).sort((a,b)=>b.strength-a.strength);
+  const kn=S.knowledge.filter(k=>k.entity===c.id).map(k=>({k,f:S.facts.find(f=>f.id===k.fact)})).filter(x=>x.f);
+  $("main").innerHTML=`<div class="split" style="grid-template-columns:260px minmax(0,1fr)"><div class="list panel" style="padding:6px">${people.map(p=>`<button data-id="${p.id}" aria-current="${p.id===selChar}">${esc(p.name)}${p.status==="morto"?' <span class="tag bad">morto</span>':""}</button>`).join("")}</div>
+  <div class="panel"><h2>${esc(c.name)}</h2><p class="muted">${esc(c.role||"")}${c.place?", "+esc(c.place):""}${c.status==="morto"?`. Morto al ciclo ${c.died}.`:""}</p>
+  ${c.tier==="main"?Object.entries(c.stats).map(([k,v])=>`<div>${STAT_IT[k]||k}: <b>${v}</b>/10</div><div class="bar ${k}"><i style="width:${v*10}%"></i></div>`).join(""):""}
+  <h2 style="margin-top:20px">Relazioni</h2>${rels.map(r=>{const o=ent(r.a===c.id?r.b:r.a);return `<div><span class="tag" style="border-color:${REL_COL[r.type]};color:${REL_COL[r.type]}">${REL_IT[r.type]}</span> ${esc(o.name)}: ${esc(r.label||"")} <span class="muted">${r.strength?`forza ${r.strength}/10`:`chiusa al ciclo ${r.closed??"?"}`}</span></div>`}).join("")||"<p class='muted'>Nessuna.</p>"}
+  <h2 style="margin-top:20px">Cosa sa</h2>${kn.map(x=>`<div>${esc(x.f.subject)} ${esc(x.f.predicate)}: ${esc(x.f.object)} <span class="tag ${x.k.certainty==='sa'?'ok':'warn'}">${x.k.certainty.replace("_"," ")}</span>${x.f.secret?'<span class="tag bad">segreto</span>':""}</div>`).join("")||"<p class='muted'>Niente di registrato.</p>"}</div></div>`;
+  $("main").querySelectorAll(".list button").forEach(b=>b.onclick=()=>{selChar=b.dataset.id;vPersonaggi()});
+}
+
+/* ---------- Relazioni ---------- */
+function vRelazioni(){
+  const ppl=S.entities.filter(e=>e.kind==="persona"),R=290,cx=360,cy=330,P={};
+  ppl.forEach((p,i)=>{const a=i/ppl.length*2*Math.PI-Math.PI/2;P[p.id]={x:cx+Math.cos(a)*R*1.15,y:cy+Math.sin(a)*R}});
+  let g=`<svg width="760" height="660" role="img" aria-label="Rete delle relazioni">`;
+  S.relations.forEach(r=>{const a=P[r.a],b=P[r.b];if(!a||!b)return;const closed=!r.strength;
+    g+=`<line x1="${a.x}" y1="${a.y}" x2="${b.x}" y2="${b.y}" stroke="${closed?'#9AA7B8':REL_COL[r.type]}" stroke-width="${closed?1:1+r.strength/2.5}" ${closed?'stroke-dasharray="4 4"':''} opacity=".7"><title>${esc(ent(r.a).name)} e ${esc(ent(r.b).name)}: ${esc(r.label||"")}</title></line>`});
+  ppl.forEach(p=>{const q=P[p.id],m=p.tier==="main",d=p.status==="morto";
+    g+=`<circle cx="${q.x}" cy="${q.y}" r="${m?11:7}" fill="${d?'#fff':m?'#5B3FD1':'#15233D'}" stroke="${d?'#B3261E':'#15233D'}" stroke-width="2"/><text x="${q.x}" y="${q.y+(m?26:22)}" font-size="${m?13:11}" font-weight="${m?600:400}" text-anchor="middle" fill="${d?'#B3261E':'#15233D'}">${esc(p.name)}</text>`});
+  g+="</svg>";
+  $("main").innerHTML=`<div class="panel"><div class="scroll-x" style="border:0">${g}</div><div class="row" style="margin-top:10px">${Object.entries(REL_IT).map(([k,v])=>`<span><b style="color:${REL_COL[k]}">&#9473;</b> ${v}</span>`).join("")}<span class="muted">Spessore = forza. Tratteggio grigio = relazione chiusa. Contorno rosso = morto.</span></div></div>`;
+}
+
+/* ---------- Debiti narrativi ---------- */
+function vDebiti(){
+  const open=S.promises.filter(p=>p.closed==null).sort((a,b)=>b.age-a.age), done=S.promises.filter(p=>p.closed!=null);
+  const pend=S.notes.filter(n=>n.kind==="foreshadow"&&n.resolved==null), paid=S.notes.filter(n=>n.kind==="foreshadow"&&n.resolved!=null), tw=S.notes.filter(n=>n.kind==="twist");
+  $("main").innerHTML=`<div class="split" style="grid-template-columns:minmax(0,1fr) minmax(0,1fr)"><div class="panel"><h2>Promesse aperte</h2><p class="muted">Domande fatte al lettore che non hanno ancora risposta. Dopo 4 cicli diventano in ritardo.</p>
+  ${open.map(p=>`<div style="margin:12px 0"><div>${esc(p.description)} ${p.overdue?'<span class="tag bad">in ritardo</span>':""}</div><div class="bar" style="max-width:300px"><i style="width:${Math.min(100,p.age*12.5)}%;background:${p.overdue?'var(--bad)':'var(--ink)'}"></i></div><span class="muted">aperta da ${p.age} cicli, dal ciclo ${p.opened}</span></div>`).join("")||"<p class='muted'>Nessuna promessa aperta.</p>"}
+  ${done.length?`<details><summary>Chiuse (${done.length})</summary>${done.map(p=>`<div>${esc(p.description)} <span class="muted">chiusa al ciclo ${p.closed}</span></div>`).join("")}</details>`:""}</div>
+  <div class="panel"><h2>Semi da piantare e pagare</h2>${pend.map(n=>`<div style="margin:10px 0">${esc(n.description)}<br><span class="muted">piantato al ciclo ${n.cycle}, da pagare entro il ciclo ${n.due}${n.due<S.cycle?" (scaduto)":""}</span></div>`).join("")||"<p class='muted'>Nessun seme in attesa.</p>"}
+  ${paid.length?`<details><summary>Già pagati (${paid.length})</summary>${paid.map(n=>`<div>${esc(n.description)}</div>`).join("")}</details>`:""}
+  <h2 style="margin-top:22px">Twist usati</h2>${tw.map(n=>`<div>Ciclo ${n.cycle}: ${esc(n.description)}</div>`).join("")||"<p class='muted'>Nessuno finora. Se ne ammette uno ogni 3 cicli.</p>"}</div></div>`;
+}
+
+/* ---------- Verifiche tecniche ---------- */
+function claimRows(list,draft){return list.map(c=>`<tr><td>${draft?'<span class="tag warn">bozza</span><br>':""}Ciclo ${c.cycle??S.draft.cycle}<br><span class="muted">${esc(c.domain)}</span></td>
+  <td>${esc(c.context)}${c.correction?`<br><b>Correzione suggerita:</b> ${esc(c.correction)}`:""}${c.note?`<br><span class="muted">${esc(c.note)}</span>`:""}${c.hint?`<br><span class="muted">Da cercare: ${esc(c.hint)}</span>`:""}</td>
+  <td><span class="tag ${c.verdict==='ok'?'ok':c.verdict==='correggere'?'bad':'warn'}">advisor: ${esc(c.verdict)}</span><br><span class="tag ${c.status==='non_verificato'?'warn':'ok'}">${esc(c.status.replace("_"," "))}</span>${c.url?`<br><a href="${esc(c.url)}" target="_blank" rel="noopener noreferrer">fonte</a>`:""}</td>
+  <td>${c.status==="non_verificato"?`<input type="url" placeholder="https://fonte" aria-label="Fonte per l'affermazione ${c.id}" id="u${c.id}"><div class="row" style="margin-top:6px"><button class="btn" data-v="${c.id}|verificato">Verificata con fonte</button><button class="btn sec" data-v="${c.id}|corretto">Corretta nel testo</button><button class="btn sec" data-v="${c.id}|fittizio">È fittizia</button></div>`:""}</td></tr>`).join("")}
+function vVerifiche(){
+  const all=(S.draft?S.draft.claims:[]), base=S.claims, n=all.concat(base).filter(c=>c.status==="non_verificato").length;
+  $("main").innerHTML=`<div class="panel"><h2>Affermazioni tecniche</h2><p class="muted">Il giudizio dell'advisor è una valutazione di plausibilità, non una verifica. Solo "verificata con fonte" indica che una persona ha controllato un documento. Non ancora verificate: <b>${n}</b>.</p>
+  ${(all.length||base.length)?`<table><tr><th>Quando</th><th>Affermazione</th><th>Stato</th><th>Azione</th></tr>${claimRows(all,true)}${claimRows(base,false)}</table>`:"<p class='muted'>Nessuna affermazione tecnica registrata. Compaiono quando un capitolo contiene marcatori di verifica.</p>"}</div>`;
+  $("main").querySelectorAll("[data-v]").forEach(b=>b.onclick=async()=>{const[id,st]=b.dataset.v.split("|");
+    try{await api("/api/verify",{id:+id,status:st,url:(document.getElementById("u"+id)||{}).value});toast("Stato aggiornato");load()}catch(e){toast(e.message)}});
+}
+
+/* ---------- Capitoli ---------- */
+function md(body){
+  const notes=[...body.matchAll(/<!--(.*?)-->/gs)].map(m=>m[1].trim());
+  const text=body.replace(/<!--.*?-->\n?/gs,"").trim();
+  const html=text.split(/\n{2,}/).map(b=>b.startsWith("# ")?`<h2>${esc(b.slice(2))}</h2>`:`<p>${esc(b).replace(/\[\[VERIFICA:\s*(.*?)\]\]/gs,'<mark title="$1">†</mark>').replace(/\n/g,"<br>")}</p>`).join("");
+  return (notes.length?`<div class="review"><b>Note dell'editor su problemi rimasti</b><br>${notes.map(esc).join("<br>")}</div>`:"")+`<div class="chapter">${html}</div>`;
+}
+function vCapitoli(){
+  let h="";
+  if(S.draft){const unv=S.draft.claims.filter(c=>c.status==="non_verificato").length;
+    h+=`<div class="panel" style="margin-bottom:22px"><h2>Bozza del ciclo ${S.draft.cycle}</h2><p class="muted">Il canone cambia solo se approvi. Il segno † indica un'affermazione tecnica da verificare${unv?` (${unv} non ancora verificate)`:""}.</p>
+    <div class="row" style="margin:12px 0 20px"><button class="btn" id="ok">Approva e porta nel canone</button><button class="btn bad" id="no">Scarta la bozza</button></div>${md(S.draft.body)}</div>`}
+  h+=`<div class="panel"><h2>Capitoli approvati</h2>${S.chapters.length?S.chapters.slice().reverse().map(c=>`<details><summary>Capitolo ${c.cycle}</summary>${md(c.body)}</details>`).join(""):"<p class='muted'>Nessun capitolo approvato dal motore. Genera una bozza con <code>python run.py draft</code>.</p>"}</div>`;
+  $("main").innerHTML=h;
+  if(S.draft){$("ok").onclick=async()=>{try{const r=await api("/api/approve");toast(r.non_verificate?`Approvato. ${r.non_verificate} affermazioni ancora da verificare.`:"Approvato.");load()}catch(e){toast(e.message)}};
+    $("no").onclick=async()=>{if(!confirm("Scartare la bozza? Il ciclo non entrerà nel canone."))return;try{await api("/api/reject");toast("Bozza scartata");load()}catch(e){toast(e.message)}}}
+}
+load();
+</script>
+</body>
+</html>
