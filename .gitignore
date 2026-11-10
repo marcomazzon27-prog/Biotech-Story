@@ -1,0 +1,16 @@
+__pycache__/
+*.pyc
+*.pyo
+*.pyd
+*.egg-info/
+.venv/
+venv/
+.env
+*.key
+work/
+mnemosine.db
+mnemosine.draft.db
+.DS_Store
+.coverage
+.pytest_cache/
+.ipynb_checkpoints/

@@ -1,0 +1,87 @@
+{
+  "version": "2.0.0",
+  "tasks": [
+    {
+      "label": "Mnemosine: init",
+      "type": "shell",
+      "command": "python",
+      "args": [
+        "run.py",
+        "init"
+      ],
+      "options": {
+        "cwd": "${workspaceFolder}"
+      },
+      "problemMatcher": []
+    },
+    {
+      "label": "Mnemosine: state",
+      "type": "shell",
+      "command": "python",
+      "args": [
+        "run.py",
+        "state"
+      ],
+      "options": {
+        "cwd": "${workspaceFolder}"
+      },
+      "problemMatcher": []
+    },
+    {
+      "label": "Mnemosine: propose",
+      "type": "shell",
+      "command": "python",
+      "args": [
+        "run.py",
+        "propose"
+      ],
+      "options": {
+        "cwd": "${workspaceFolder}"
+      },
+      "problemMatcher": []
+    },
+    {
+      "label": "Mnemosine: commit",
+      "type": "shell",
+      "command": "python",
+      "args": [
+        "run.py",
+        "commit"
+      ],
+      "options": {
+        "cwd": "${workspaceFolder}"
+      },
+      "problemMatcher": []
+    },
+    {
+      "label": "Mnemosine: serve",
+      "type": "shell",
+      "command": "python",
+      "args": [
+        "run.py",
+        "serve"
+      ],
+      "options": {
+        "cwd": "${workspaceFolder}"
+      },
+      "problemMatcher": []
+    },
+    {
+      "label": "Mnemosine: tests",
+      "type": "shell",
+      "command": "python",
+      "args": [
+        "-m",
+        "unittest",
+        "discover",
+        "-s",
+        "tests",
+        "-v"
+      ],
+      "options": {
+        "cwd": "${workspaceFolder}"
+      },
+      "problemMatcher": []
+    }
+  ]
+}
